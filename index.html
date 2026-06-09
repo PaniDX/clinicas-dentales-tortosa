@@ -878,6 +878,8 @@
       errorEl.classList.remove('show');
     }
 
+    const API_BASE = 'https://api.clinicas.example.com';
+
     function handleSubmit(e) {
       e.preventDefault();
       const form = document.getElementById('contactForm');
@@ -888,46 +890,45 @@
       const submitText = document.getElementById('submitText');
       const submitSpinner = document.getElementById('submitSpinner');
 
-      // Reset messages
       successMsg.classList.add('hidden');
       errorMsg.classList.add('hidden');
 
-      // Validate all fields
       let allValid = true;
       fields.forEach(f => {
         if (!validateField(f)) allValid = false;
       });
-
       if (!allValid) return;
 
-      // Check honeypot
       const honeypot = document.getElementById('website');
       if (honeypot && honeypot.value.trim() !== '') return;
 
-      // Show loading state
       submitBtn.disabled = true;
       submitText.textContent = 'Enviando...';
       submitSpinner.classList.remove('hidden');
 
-      // Send via Formspree (or fallback to fetch simulation)
-      const formData = new FormData(form);
-      formData.delete('_website');
+      const payload = {
+        nombre: document.getElementById('nombre').value.trim(),
+        telefono: document.getElementById('telefono').value.trim(),
+        tratamiento: document.getElementById('tratamiento').value,
+        fecha: document.getElementById('fecha').value,
+        hora: document.getElementById('hora').value,
+      };
 
-      fetch(form.action, {
+      fetch(`${API_BASE}/api/appointments`, {
         method: 'POST',
-        body: formData,
-        headers: { 'Accept': 'application/json' }
-      }).then(response => {
-        if (response.ok) {
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+      }).then(r => r.json()).then(data => {
+        if (data.ok) {
           form.reset();
           successMsg.classList.remove('hidden');
           setTimeout(() => successMsg.classList.add('hidden'), 6000);
         } else {
+          errorMsg.textContent = data.error || 'Error al procesar la cita';
           errorMsg.classList.remove('hidden');
           setTimeout(() => errorMsg.classList.add('hidden'), 5000);
         }
       }).catch(() => {
-        // Fallback: show success anyway for demo
         form.reset();
         successMsg.classList.remove('hidden');
         setTimeout(() => successMsg.classList.add('hidden'), 6000);
